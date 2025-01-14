@@ -4,6 +4,7 @@ import prisma from "@repo/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
@@ -88,6 +89,34 @@ router.post("/signin", async(req : Request , res : Response) => {
        
     } catch (err) {
         console.log("Error occured while signin", err); 
+    }
+})
+
+router.get("/" , authMiddleware ,async(req : Request, res : Response) => {
+    const userdId = req.id;
+    if(!userdId){
+        return
+    }
+    try {
+        const user = await prisma.user.findFirst({
+            where: {
+                id : userdId
+            },
+            select: {
+                firstName: true,
+                lastName: true,
+                username: true,
+                workflows: true
+            }
+        })
+        if(!user){
+            res.status(404).json({message : "User not found!"});
+            return
+        }
+
+        res.status(200).json(user);
+    } catch (err) {
+        console.log("Error occured while getting user data" , err);
     }
 })
 
