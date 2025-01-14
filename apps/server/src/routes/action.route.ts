@@ -3,7 +3,7 @@ import prisma from "@repo/db";
 
 const router = Router();
 
-router.post("/actions", async(req : Request, res : Response) => {
+router.get("/actions", async(req : Request, res : Response) => {
     try {
         const actions = await prisma.actionType.findMany({})
         res.status(200).json({actions});

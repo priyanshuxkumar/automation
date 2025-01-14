@@ -3,7 +3,7 @@ import prisma from "@repo/db";
 
 const router = Router();
 
-router.post("/triggers", async(req : Request, res : Response) => {
+router.get("/triggers", async(req : Request, res : Response) => {
     try {
         const triggers = await prisma.triggerType.findMany({})
         res.status(200).json({triggers});
@@ -12,5 +12,6 @@ router.post("/triggers", async(req : Request, res : Response) => {
     }
 })
 
+router.post
 
 export const triggerRouter = router;
