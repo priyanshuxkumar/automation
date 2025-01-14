@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,7 +11,80 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id        Int           @id @default(autoincrement())
+  username  String        @unique
+  firstName String
+  lastName  String
+  email     String        @unique
+  password  UserPassword?
+  createdAt DateTime      @default(now())
+
+  workflows Workflow[]
 }
+
+model UserPassword {
+  hash   String
+  userId Int    @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Workflow {
+  id           String        @id @default(uuid())
+  name         String
+  userId       Int
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trigger      Trigger?
+  actions      Action[]
+  workflowRuns WorkflowRun[]
+
+  @@unique([name, userId])
+}
+
+model Trigger {
+  id            String      @id @default(uuid())
+  triggerTypeId String
+  type          TriggerType @relation(fields: [triggerTypeId], references: [id])
+  metadata      Json        @default("{}")
+  workflowId    String      @unique
+  workflow      Workflow    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model TriggerType {
+  id       String    @id @default(uuid())
+  name     String
+  iconUrl  String
+  triggers Trigger[]
+}
+
+model Action {
+  id         String   @id @default(uuid())
+  metadata   Json     @default("{}")
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  actionTypeId String
+  type         ActionType @relation(fields: [actionTypeId], references: [id])
+  sortingOrder Int        @default(0)
+}
+
+model ActionType {
+  id      String   @id @default(uuid())
+  name    String
+  iconUrl String
+  actions Action[]
+}
+
+model WorkflowRun {
+  id         String   @id @default(uuid())
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id])
+
+  workflowRunOutbox WorkflowRunOutbox?
+}
+
+model WorkflowRunOutbox {
+  id            String      @id @default(uuid())
+  workflowRunId String      @unique
+  workflowRun   WorkflowRun @relation(fields: [workflowRunId], references: [id])
+}
+ 
