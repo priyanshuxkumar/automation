@@ -4,7 +4,7 @@ import prisma from "@repo/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config";
-import { authMiddleware } from "../middleware/auth.middleware";
+import { authUserMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
@@ -92,7 +92,7 @@ router.post("/signin", async(req : Request , res : Response) => {
     }
 })
 
-router.get("/" , authMiddleware ,async(req : Request, res : Response) => {
+router.get("/" , authUserMiddleware ,async(req : Request, res : Response) => {
     const userdId = req.id;
     if(!userdId){
         return

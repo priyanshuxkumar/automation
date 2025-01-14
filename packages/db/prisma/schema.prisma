@@ -52,7 +52,7 @@ model Trigger {
 
 model TriggerType {
   id       String    @id @default(uuid())
-  name     String
+  name     String    @unique
   iconUrl  String
   triggers Trigger[]
 }
@@ -70,7 +70,7 @@ model Action {
 
 model ActionType {
   id      String   @id @default(uuid())
-  name    String
+  name    String   @unique
   iconUrl String
   actions Action[]
 }

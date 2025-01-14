@@ -28,3 +28,15 @@ export const CreateWorkflowSchema = z.object({
         actionMetadata : z.any().optional()
     }))
 })
+
+/** CreateTriggerTypeSchema */
+export const CreateTriggerTypeSchema = z.object({
+    name : z.string().max(20),
+    iconUrl : z.string()
+})
+
+/** CreateActionTypeSchema */
+export const CreateActionTypeSchema = z.object({
+    name : z.string().max(20),
+    iconUrl : z.string()
+})

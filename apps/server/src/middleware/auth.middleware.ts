@@ -3,10 +3,10 @@ import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config";
 
 
-const authMiddleware = (req: Request , res:Response , next : NextFunction) : void => {
+const authUserMiddleware = (req: Request , res:Response , next : NextFunction) : void => {
     const token = req.headers.authorization?.split(" ")[1];
     if(!token){
-        res.status(401).json({message: "Unauthorized!"});
+        res.status(401).json({message: "Unauthenticated"});
         return;
     }
     try {
@@ -15,11 +15,12 @@ const authMiddleware = (req: Request , res:Response , next : NextFunction) : voi
             req.id = payload.id;
             next();
         }else {
-            res.status(403).json({ message: "Unauthorized!" });
+            res.status(403).json({ message: "Unauthorized" });
+            return
         }
     } catch (error) {
-        res.status(401).json({message: "Unauthorized!"})
+        res.status(401).json({message: "Unauthorized"})
     }
 }
 
-export {authMiddleware};
+export { authUserMiddleware };

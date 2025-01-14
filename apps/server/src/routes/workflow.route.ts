@@ -1,11 +1,11 @@
 import { Router , Response , Request} from "express";
 import { CreateWorkflowSchema, UserSignInSchema, UserSignupSchema } from "../types";
 import prisma from "@repo/db";
-import { authMiddleware } from "../middleware/auth.middleware";
+import { authUserMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
-router.post("/create" , authMiddleware , async(req: Request , res: Response) => {
+router.post("/create" , authUserMiddleware , async(req: Request , res: Response) => {
     const userId = req.id;
     const body = req.body;
     const parsedData = CreateWorkflowSchema.safeParse(body);
