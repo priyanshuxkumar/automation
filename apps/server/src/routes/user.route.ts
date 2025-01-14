@@ -3,8 +3,9 @@ import { UserSignInSchema, UserSignupSchema } from "../types";
 import prisma from "@repo/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "../config";
 import { authUserMiddleware } from "../middleware/auth.middleware";
+import { sendVerificationEmail } from "../services/email";
+import { JWT_SECRET } from "../config/jwt.config";
 
 const router = Router();
 
@@ -28,7 +29,6 @@ router.post("/signup", async(req : Request , res : Response) => {
 
         const hashPassword = await bcrypt.hash(parsedData.data.password , 10);
 
-
         await prisma.user.create({
             data: {
                 firstName: parsedData.data.firstname,
@@ -42,8 +42,8 @@ router.post("/signup", async(req : Request , res : Response) => {
                 }
             }
         })
-
-        res.status(200).json({message: "User signup successfully!"})
+        sendVerificationEmail(parsedData.data.email);
+        res.status(200).json({message: "Please verify your email"})
         return;
     } catch (err) {
         console.log("Error occured while signup", err); 
@@ -92,7 +92,7 @@ router.post("/signin", async(req : Request , res : Response) => {
     }
 })
 
-router.get("/" , authUserMiddleware ,async(req : Request, res : Response) => {
+router.get("/" , authUserMiddleware, async(req : Request, res : Response) => {
     const userdId = req.id;
     if(!userdId){
         return
@@ -117,6 +117,28 @@ router.get("/" , authUserMiddleware ,async(req : Request, res : Response) => {
         res.status(200).json(user);
     } catch (err) {
         console.log("Error occured while getting user data" , err);
+    }
+})
+
+router.get("/verify-email", async(req : Request, res : Response) => {
+    const token = req.query.token as string;
+    try {
+        const payload = jwt.verify(token , JWT_SECRET);
+        if(typeof payload === "string" || !payload.email) {
+            res.status(400).json({message : "Invalid request"})
+            return;
+        }
+        await prisma.user.update({
+            where : {
+                email : payload.email
+            },
+            data: {
+                isVerified : true
+            }
+        })
+        res.status(200).json({message: "Email verified successfully!"});
+    } catch (err) {
+        console.log("Error occured while verify user email" , err);
     }
 })
 
