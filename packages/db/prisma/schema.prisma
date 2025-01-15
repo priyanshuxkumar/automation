@@ -80,7 +80,7 @@ model WorkflowRun {
   id         String   @id @default(uuid())
   workflowId String
   workflow   Workflow @relation(fields: [workflowId], references: [id])
-
+  metadata   Json
   workflowRunOutbox WorkflowRunOutbox?
 }
 

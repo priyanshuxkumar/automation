@@ -1,6 +1,6 @@
 import { NextFunction, Response , Request} from "express";
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "../config";
+import { JWT_SECRET } from "../config/jwt.config";
 
 
 const authUserMiddleware = (req: Request , res:Response , next : NextFunction) : void => {

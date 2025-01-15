@@ -9,7 +9,8 @@ router.post("/create" , authUserMiddleware , async(req: Request , res: Response)
     const userId = req.id;
     const body = req.body;
     const parsedData = CreateWorkflowSchema.safeParse(body);
-    if(!parsedData) {
+
+    if(!parsedData.success) {
         res.status(400).json({message: "Invalid input of creating a workflow"})
         return;
     }
@@ -17,7 +18,7 @@ router.post("/create" , authUserMiddleware , async(req: Request , res: Response)
        await prisma.$transaction(async(tx) => {
             const workflow = await tx.workflow.create({
                 data: {
-                    name : parsedData.data?.name as string,
+                    name : parsedData.data.name,
                     userId : userId as number,
                     triggerId: "",
                     actions: {
@@ -32,13 +33,13 @@ router.post("/create" , authUserMiddleware , async(req: Request , res: Response)
 
             const trigger = await tx.trigger.create({
                 data: {
-                    triggerTypeId : parsedData.data?.triggerTypeId as string,
+                    triggerTypeId : parsedData.data.triggerTypeId,
                     metadata : parsedData.data?.triggerMetadata,
-                    workflowId : workflow.id as string
+                    workflowId : workflow.id
                 }
             })
 
-            await prisma.workflow.update({
+            await tx.workflow.update({
                 where : {
                     id : workflow.id
                 },
@@ -50,6 +51,7 @@ router.post("/create" , authUserMiddleware , async(req: Request , res: Response)
        res.status(200).json({message: "Workflow created successfully!"});
     } catch (err) {
         console.log("Error occured while creating workflow", err);
+        return;
     }
 })
 
