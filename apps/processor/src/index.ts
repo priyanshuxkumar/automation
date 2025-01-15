@@ -1,10 +1,9 @@
 import prisma from "@repo/db";
-import {producer, TOPIC_NAME} from "@repo/kafka/src";
+import { producer , TOPIC_NAME } from "@repo/kafka-client"
 
 async function main(){
     await producer.connect();
     console.log("Producer connect successfully!");
-
 
     while(true){
         const pendingRows = await prisma.workflowRunOutbox.findMany({
@@ -14,7 +13,7 @@ async function main(){
 
         producer.send({
             topic: TOPIC_NAME,
-            messages: pendingRows.map((row) => ({
+            messages: pendingRows.map((row: any) => ({
                 value: row.workflowRunId,
             }))
         })
@@ -22,11 +21,11 @@ async function main(){
         await prisma.workflowRunOutbox.deleteMany({
             where: {
                 id: {
-                    in: pendingRows.map(row => row.id) 
+                    in: pendingRows.map((row : any) => row.id) 
                 }
             }
         })
     }
 }
 
-main()
+main().catch(console.error)

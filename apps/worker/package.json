@@ -1,5 +1,5 @@
 {
-  "name": "@repo/kafka",
+  "name": "@repo/worker",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
@@ -8,9 +8,6 @@
     "dev": "tsc -b && nodemon dist/index.js"
   },
   "dependencies": {
-    "kafkajs": "^2.2.4"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.9"
+    "@repo/kafka-client": "*"
   }
 }
