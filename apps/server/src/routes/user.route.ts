@@ -76,17 +76,16 @@ router.post("/signin", async(req : Request , res : Response) => {
         if(!isPasswordValid){
             res.status(403).json({message : "Invalid crendentials"});
         }
-
-        const token = jwt.sign({id : user.id} , JWT_SECRET);
+        const token = jwt.sign({id : user.id} , JWT_SECRET , {expiresIn: '24h'});
         const options = {
             httpOnly : true,
-            secure : true,
-            maxAge: 1000 * 60 * 60 * 24
+            secure : process.env.NODE_ENV === 'production',
+            maxAge: 1000 * 60 * 60 * 24,
+            sameSite: 'strict' as 'strict',
+            path: '/',
         }
-
-        res.status(200).cookie("__token__" , token , options).json({message : "User logged in successfully", token});
-        return;
-       
+        res.cookie("_token_", token, options);
+        res.status(200).json({ message: "User logged in successfully", token});
     } catch (err) {
         console.log("Error occured while signin", err); 
     }

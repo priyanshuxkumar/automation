@@ -4,7 +4,7 @@ import { JWT_SECRET } from "../config/jwt.config";
 
 
 const authUserMiddleware = (req: Request , res:Response , next : NextFunction) : void => {
-    const token = req.headers.authorization?.split(" ")[1];
+    const token = req.cookies._token_; 
     if(!token){
         res.status(401).json({message: "Unauthenticated"});
         return;

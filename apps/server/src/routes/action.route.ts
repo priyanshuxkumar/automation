@@ -7,7 +7,7 @@ const router = Router();
 router.get("/actions", async(req : Request, res : Response) => {
     try {
         const actions = await prisma.actionType.findMany({})
-        res.status(200).json({actions});
+        res.status(200).json(actions);
     } catch (error) {
         console.log("Error occured while fetching actions")
     }

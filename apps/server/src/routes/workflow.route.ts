@@ -55,4 +55,46 @@ router.post("/create" , authUserMiddleware , async(req: Request , res: Response)
     }
 })
 
+router.get('/' , authUserMiddleware , async(req: Request , res: Response) => {
+    const userId = req.id;
+    try {
+        const workflows = await prisma.workflow.findMany({
+            where: {
+                userId 
+            },
+            include: {
+                user: true,
+                trigger: {
+                    include: {
+                        type: true
+                    }
+                },
+                actions: {
+                    include: {
+                        type: true
+                    }
+                }
+            }
+        })
+        res.status(200).json(
+           workflows.map((item) => {
+            return {
+              id: item.id,
+              name: item.name,
+              user: {
+                firstname: item.user.firstName,
+                lastname: item.user.lastName,
+              },
+              icons: {
+                triggerIcon: item.trigger?.type.iconUrl,
+                actionIcons: item.actions.map((action) => action.type.iconUrl)
+              },
+            };
+          }),
+        );
+    } catch (err) {
+        console.log("Error occured while fetching workflow", err);
+    }
+})
+
 export const workflowRouter = router;

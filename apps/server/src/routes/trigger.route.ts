@@ -7,7 +7,7 @@ const router = Router();
 router.get("/triggers", async(req : Request, res : Response) => {
     try {
         const triggers = await prisma.triggerType.findMany({})
-        res.status(200).json({triggers});
+        res.status(200).json(triggers);
     } catch (error) {
         console.log("Error occured while fetching triggers")
     }
