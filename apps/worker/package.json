@@ -8,6 +8,9 @@
     "dev": "tsc -b && nodemon dist/index.js"
   },
   "dependencies": {
-    "@repo/kafka-client": "*"
+    "@repo/db": "*",
+    "@repo/kafka-client": "*",
+    "dotenv": "^16.4.7",
+    "resend": "^4.1.1"
   }
 }

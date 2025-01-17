@@ -1,4 +1,6 @@
-import {consumer , TOPIC_NAME} from "@repo/kafka-client"
+import {consumer , TOPIC_NAME} from "@repo/kafka-client";
+import prisma from "@repo/db"
+import { sendEmail } from "./email";
 
 async function main(){
     await consumer.connect();
@@ -16,6 +18,32 @@ async function main(){
 
                 await new Promise(r => setTimeout(r , 1000));
 
+                /** Perform task of actions */
+                const workflowRunId = message.value?.toString();
+                const workflow = await prisma.workflowRun.findFirst({
+                    where: {
+                        id: workflowRunId
+                    },
+                    select: {
+                        workflow:{
+                            include: {
+                                actions: {
+                                    include : {
+                                        type: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
+                if (workflow?.workflow.actions.some(item => item.type.name === "Email")) {
+                    const emailActions = workflow.workflow.actions.filter(item => item.type.name === "Email");
+                    emailActions.forEach(action => {
+                        const metadata = action.metadata;
+                        console.log(JSON.stringify(metadata))
+                        sendEmail(metadata); 
+                    });
+                }
                 await consumer.commitOffsets([
                     {
                         topic: TOPIC_NAME,
@@ -24,7 +52,7 @@ async function main(){
                     }
                 ]);
 
-                console.log("Complete successfully!");
+                console.log("Work done!");
             }
         })
     }
