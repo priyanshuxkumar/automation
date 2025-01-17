@@ -20,13 +20,13 @@ export const UserSignInSchema = z.object({
 
 /** Workflow Schema */ 
 export const CreateWorkflowSchema = z.object({
-    name : z.string().max(20),
+    name : z.string().max(20).optional(),
     triggerTypeId : z.string(),
     triggerMetadata : z.any().optional(),
     actions: z.array(z.object({
-        actionTypeId : z.string(),
+        actionTypeId : z.string().optional(),
         actionMetadata : z.any().optional()
-    }))
+    })).optional()
 })
 
 /** CreateTriggerTypeSchema */
