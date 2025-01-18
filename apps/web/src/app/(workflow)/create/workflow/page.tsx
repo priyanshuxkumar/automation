@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Home, Zap } from 'lucide-react'
+import { Plus, Home, Zap, Loader } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
@@ -15,7 +15,8 @@ import {
 import Image from "next/image"
 import { WorkflowCell } from '@/components/workflowcell'
 import { WebhookSetup } from '@/components/webhook-setup'
-import { EmailSetup } from '@/components/email-setup'
+import EmailSetup from '@/components/email-setup'
+
 
 
 export interface AvailableTandAProps {
@@ -39,96 +40,205 @@ export interface SelectedActionsProps {
   metadata? : JSON
 }
 
+const isValidAction = (action: SelectedActionsProps): boolean => {
+  return !!action && !!action.actionTypeId && !!action.name;
+};
+
 export default function Workflow() {
   const router = useRouter();
-  const [openModal, setOpenModal] = useState<boolean>(false) // Available Trigger & Action Modal
+  const [triggerActionModal, setTriggerActionModal] = useState<boolean>(false) // Available Trigger & Action Modal
   const [isOpen , setIsOpen] = useState<boolean>(false) //Setup Trigger & Actions Modal
-  const [selectedModalIndex , setSelectedModalIndex] = useState<number | null>(null)
-  const openAvailableTriggerActionDialog = (index : number) => {
-    setSelectedModalIndex(index)
-    setOpenModal((prev) => !prev)
-  }
+  const [selectedModalIndex , setSelectedModalIndex] = useState<number | null>(null) 
   const [selectedTrigger, setSelectedTrigger] = useState<SelectedTriggerProps | null>(null);
   const [selectedActions , setSelectedActions] = useState<SelectedActionsProps[]>([]);
+
+  const [currentActive , setCurrentActive] = useState<{ 
+    index: number | null;
+    type: string;
+    name : string;
+    }>({
+    index: null,
+    type: '',
+    name : ''
+  }); //Track which action or trigger is currently active
+ 
+  const handleTriggerActionModal = (index: number) => {
+    setSelectedModalIndex(index);
+    if (index == 0 && selectedTrigger) {
+      setCurrentActive({
+        index: index,
+        type: 'trigger',
+        name: selectedTrigger.name,
+      });
+      return;
+    }else if (index > 0 && selectedActions.find(
+        (action) => action.index === index && isValidAction(action))) {
+      const selectedAction = selectedActions.find((action) => action.index === index);
+  
+      if (selectedAction) {
+        setCurrentActive({
+          index: selectedAction.index,
+          type: 'action',
+          name: selectedAction.name,
+        });
+      }
+      return;
+    }
+  
+    // Open the modal if no valid trigger or action exists
+    setTriggerActionModal((prev) => !prev);
+  };
+ 
+  const renderSetupComponent = (selectedComponent: any) => {
+    if (selectedComponent.type === "trigger" && selectedComponent.name === "Webhook") {
+      return (
+        <WebhookSetup
+          isOpen={isOpen}
+          setIsOpen={setIsOpen}
+          selectedTrigger={selectedTrigger as SelectedTriggerProps}
+          setSelectedTrigger={setSelectedTrigger}
+        />
+      );
+    }else if (selectedComponent.type === "action" && selectedComponent.name === "Email") {
+      return (
+        <EmailSetup
+          isOpen={isOpen}
+          setIsOpen={setIsOpen}
+          selectedModalIndex={selectedModalIndex as number}
+          selectedAction={selectedActions.find((item) => item.index == selectedModalIndex)}
+          currentActive={currentActive}
+          setSelectedActions={setSelectedActions}
+        />
+      );
+    }
+  };
+  
+  const [isPublishing , setIsPublishing] = useState(false);
+  const publishWorkflow = async () => {
+    setIsPublishing(true)
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/v1/workflow/create`, {
+          name : '',
+          triggerTypeId: selectedTrigger?.triggerTypeId,
+          triggerMetadata: selectedTrigger?.metadata,
+          actions : 
+            selectedActions.map(x => ({
+              actionTypeId: x.actionTypeId,
+              actionMetadata: x.metadata
+            }))
+          
+      }, {
+        withCredentials: true
+      })
+      if(response.status === 200){
+        setIsPublishing(false)
+        console.log("Workflow created successfully!");
+      }
+    } catch (error) {
+      console.error(error);
+    }finally{
+      setIsPublishing(false)
+    }
+  }
+
+
   return (
     <>
-    <div className="min-h-screen flex dark:bg-gray-950">
-      {/* Sidebar */}
-      <div className="w-16 bg-gray-100 dark:bg-gray-900 border-r flex flex-col items-center py-4 gap-6">
-        <Button onClick={() => router.push('/home')} variant="ghost" size="icon" className="rounded-lg">
-          <Home className="h-5 w-5" />
-        </Button>
-      </div>
+    {isPublishing &&
+      <div className="w-full flex justify-center items-center h-screen absolute backdrop-blur-md bg-white/30 z-50">
+        <div className="animate-spin">
+          <Loader size={50} />
+        </div>
+      </div>}
 
-      <div className="flex-1">
-        <header className="h-16 border-b flex items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <Zap className="h-5 w-5 text-orange-500" />
-            <span className="font-medium">Workflows</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button>Publish</Button>
-          </div>
-        </header>
+      <div className="min-h-screen flex dark:bg-gray-950">
+        {/* Sidebar */}
+        <div className="w-16 bg-gray-100 dark:bg-gray-900 border-r flex flex-col items-center py-4 gap-6">
+          <Button
+            onClick={() => router.push("/home")}
+            variant="ghost"
+            size="icon"
+            className="rounded-lg"
+          >
+            <Home className="h-5 w-5" />
+          </Button>
+        </div>
 
-        <div className="max-w-3xl mx-auto p-8 space-y-8">
-          <div className="space-y-8">
-            {/** Trigger */}
-            <WorkflowCell onClick={openAvailableTriggerActionDialog} index={0} name ={selectedTrigger?.name as string} iconUrl={selectedTrigger?.iconUrl as string} type='trigger'/>
-
-            {/** Actions */}
-            {selectedActions && selectedActions?.map((item ) => (
-              <WorkflowCell
-                key={item?.index}
-                onClick={openAvailableTriggerActionDialog}
-                index={item.index}
-                name={item.name as string}
-                iconUrl={item.iconUrl as string}
-                type="actions"
-              />
-            ))}
-            <div className="w-px bg-violet-200 dark:bg-violet-800 mx-auto relative">
-              <Button 
-                size="icon" 
-                variant="outline" 
-                className="absolute -top-4 -left-4 rounded-full w-8 h-8"
-                onClick={() => { 
-                  setSelectedActions((x : any) => [
-                    ...x, 
-                    {
-                      index: x.length + 1, 
-                      actionTypeId: "", 
-                      name: "", 
-                      iconUrl: "", 
-                      metadata: {} 
-                    }
-                  ]);
-                }}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+        <div className="flex-1">
+          <header className="h-16 border-b flex items-center justify-between px-4">
+            <div className="flex items-center gap-4">
+              <Zap className="h-5 w-5 text-orange-500" />
+              <span className="font-medium">Workflows</span>
             </div>
+            <div className="flex items-center gap-4">
+              <Button onClick={publishWorkflow}>Publish</Button>
+            </div>
+          </header>
 
+          <div className="max-w-3xl mx-auto p-8 space-y-8">
+            <div className="space-y-8">
+              {/** Trigger */}
+              <WorkflowCell
+                onClick={handleTriggerActionModal}
+                index={0}
+                name={selectedTrigger?.name as string}
+                iconUrl={selectedTrigger?.iconUrl as string}
+                type="trigger"
+              />
+
+              {/** Actions */}
+              {selectedActions &&
+                selectedActions?.map((item) => (
+                  <WorkflowCell
+                    key={item?.index}
+                    onClick={handleTriggerActionModal}
+                    index={item.index}
+                    name={item.name as string}
+                    iconUrl={item.iconUrl as string}
+                    type="actions"
+                  />
+                ))}
+              <div className="w-px bg-violet-200 dark:bg-violet-800 mx-auto relative">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="absolute -top-4 -left-4 rounded-full w-8 h-8"
+                  onClick={() => {
+                    setSelectedActions((x: any) => [
+                      ...x,
+                      {
+                        index: x.length + 1,
+                        actionTypeId: "",
+                        name: "",
+                        iconUrl: "",
+                        metadata: {},
+                      },
+                    ]);
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-      <AvailableTriggersActionsModal 
-        open = {openModal} // Available Trigger & Action Modal
-        setOpen = {setOpenModal} // Available Trigger & Action Modal
-        isOpen = {isOpen} //Setup Trigger & Actions Modal
-        setIsOpen ={setIsOpen} //Setup Trigger & Actions Modal
+      <AvailableTriggersActionsModal
+        setCurrentActive={setCurrentActive}
+
+        triggerActionModal={triggerActionModal} // Available Trigger & Action Modal
+        setTriggerActionModal={setTriggerActionModal} // Available Trigger & Action Modal
+
+        isOpen={isOpen} //Setup Trigger & Actions Modal
+        setIsOpen={setIsOpen} //Setup Trigger & Actions Modal
         selectedModalIndex={selectedModalIndex as number}
-        setSelectedTrigger={setSelectedTrigger} 
+        setSelectedTrigger={setSelectedTrigger}
         setSelectedActions={setSelectedActions}
       />
-      if (selectedTrigger && selectedTrigger.name == Webhook) {
-        <WebhookSetup isOpen={isOpen} setIsOpen={setIsOpen} selectedTrigger={selectedTrigger as SelectedTriggerProps}/>
-      } else if(selectedAction && selectedAction == Email){
-        <EmailSetup/>
-      } 
+
+      {renderSetupComponent(currentActive)}
     </>
-  )
+  );
 }
 
 /** Fetch Avaiable Trigger and Actions */
@@ -150,20 +260,26 @@ function useAvailableActionsAndTriggers() {
   }
 }
 
-
-
 /** Modal for show available Triggers and Actions  */
 function AvailableTriggersActionsModal({
-  open,
-  setOpen,
+  setCurrentActive,
+ 
+  triggerActionModal,
+  setTriggerActionModal,
+  
   isOpen,
   setIsOpen,
+
   selectedModalIndex,
+
   setSelectedTrigger,
   setSelectedActions,
 }: {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setCurrentActive:any;
+
+  triggerActionModal: boolean;
+  setTriggerActionModal: React.Dispatch<React.SetStateAction<boolean>>;
+
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   selectedModalIndex: number;
@@ -171,16 +287,22 @@ function AvailableTriggersActionsModal({
   setSelectedActions: SelectedActionsProps;
 }) {
   const { availableActions, availableTriggers } = useAvailableActionsAndTriggers();
+
   const handleSelected = (selectedId: string) => {
     setIsOpen(!isOpen); // Open setup Webhook
-    setOpen(!open); // Close Available Triggers and Actions component
-    if (selectedModalIndex === 0) {
-      // Trigger
-      const selectedTrigger = availableTriggers.find(
-        (item) => item.id === selectedId
-      );
-      console.log(selectedTrigger);
+    setTriggerActionModal(!open); // Close Available Triggers and Actions component
+    
+    if (selectedModalIndex === 0) { // Trigger
+      const selectedTrigger = availableTriggers.find((item) => item.id === selectedId);
+      setCurrentActive({
+        index: 0,
+        type : 'trigger',
+        name: selectedTrigger?.name
+      });
+
+
       if (selectedTrigger) {
+        //@ts-ignore
         setSelectedTrigger({
           triggerTypeId: selectedTrigger.id,
           name: selectedTrigger.name,
@@ -188,11 +310,13 @@ function AvailableTriggersActionsModal({
           metadata: {},
         });
       }
-    } else {
-      // Actions
-      const selectedAction = availableActions.find(
-        (item) => item.id === selectedId
-      );
+    } else { // Actions
+      const selectedAction = availableActions.find((item) => item.id === selectedId);
+      setCurrentActive({
+        index: selectedModalIndex,
+        type : 'action',
+        name: selectedAction?.name
+      });
       if (selectedAction) {
         setSelectedActions((prev: any[]) => {
           const existingActionIndex = prev.findIndex(
@@ -226,9 +350,11 @@ function AvailableTriggersActionsModal({
     }
   };
 
+ 
+
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={triggerActionModal} onOpenChange={setTriggerActionModal}>
         <DialogTitle></DialogTitle>
         <DialogDescription></DialogDescription>
         <DialogContent className="max-w-5xl w-[30vw] min-h-[50%]">
@@ -267,4 +393,3 @@ function AvailableTriggersActionsModal({
     </>
   );
 }
-
