@@ -37,6 +37,7 @@ router.post("/create" , authUserMiddleware , async(req: Request , res: Response)
                         name : parsedData.data.name || "Untitled workflow",
                         userId : userId as number,
                         triggerId: "",
+                        status: 'On',
                         actions: {
                             create : parsedData.data?.actions?.map((item , index) => ({
                                 actionTypeId: item.actionTypeId as string,
@@ -52,6 +53,7 @@ router.post("/create" , authUserMiddleware , async(req: Request , res: Response)
                         name : parsedData.data.name || "Untitled workflow",
                         userId : userId as number,
                         triggerId: "",
+                        status: 'On',
                         actions: {
                             create : parsedData.data?.actions?.map((item , index) => ({
                                 actionTypeId: item.actionTypeId as string,
