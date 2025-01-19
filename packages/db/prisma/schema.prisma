@@ -36,10 +36,9 @@ model Workflow {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   triggerId    String
   trigger      Trigger?
+  status       WorkflowStatus
   actions      Action[]
   workflowRuns WorkflowRun[]
-
-  @@unique([name, userId])
 }
 
 model Trigger {
@@ -90,3 +89,8 @@ model WorkflowRunOutbox {
   workflowRun   WorkflowRun @relation(fields: [workflowRunId], references: [id])
 }
  
+
+enum WorkflowStatus {
+  On 
+  Off
+} 
